@@ -1,0 +1,9 @@
+# Built gems
+pkg
+*.gem
+
+# Sublimetext
+*.sublime-project
+.lock
+.bundle
+.ru
