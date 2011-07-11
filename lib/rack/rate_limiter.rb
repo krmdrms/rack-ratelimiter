@@ -25,17 +25,24 @@ module Rack
         key = generate_key(request)
         redis.setex(key, @options[:interval], @options[:max_requests]) unless redis.exists(key)
         @rate_remaining = redis.decr(key)
-      
+        @rate_reset_at = reset_at(redis.ttl(key))
+
         return limit_exceeded! if @rate_remaining < 0
       rescue ::Errno::ECONNREFUSED
         return [status, headers, body]
       end
 
       headers.merge!({'X-RateLimit-Limit' => @options[:max_requests].to_s,
-                      'X-RateLimit-Remaining' => @rate_remaining.to_s
+                      'X-RateLimit-Remaining' => @rate_remaining.to_s,
+                      'X-RateLimit-Reset' => @rate_reset_at.to_s
                     })
 
       return status, headers, body
+    end
+
+    def reset_at(ttl)
+      time_now = Time.now.to_i
+      time_now + ttl
     end
 
     def generate_key(request)
